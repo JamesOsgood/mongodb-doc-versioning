@@ -1,0 +1,57 @@
+// Select the database to use.
+use('ff');
+
+pipeline = [
+  {
+    '$match': {
+      '_id': 5
+    }
+  }, {
+    '$set': {
+      'myc_v': {
+        '$map': {
+          'input': {
+            '$filter': {
+              'input': '$corrections', 
+              'as': 'correction', 
+              'cond': {
+                '$eq': [
+                  '$$correction.user', 'user_1'
+                ]
+              }
+            }
+          }, 
+          'as': 'item', 
+          'in': {
+            'k': '$$item.field', 
+            'v': '$$item.value'
+          }
+        }
+      }
+    }
+  }, {
+    '$unset': 'corrections'
+  }, {
+    '$set': {
+      'new_obj': {
+        '$arrayToObject': {
+          '$concatArrays': [
+            {
+              '$objectToArray': '$$ROOT'
+            }, '$myc_v'
+          ]
+        }
+      }
+    }
+  }, {
+    '$unset': [
+      'new_obj.myc_v'
+    ]
+  }, {
+    '$replaceRoot': {
+      'newRoot': '$new_obj'
+    }
+  }
+]
+
+db.test.aggregate(pipeline).toArray()
